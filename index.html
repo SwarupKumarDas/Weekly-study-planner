@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Planner | Organize Your Weekly Schedule</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #4895ef;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+            --warning: #f72585;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --border-radius: 10px;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            color: var(--secondary);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header p {
+            font-size: 1.2rem;
+            color: var(--gray);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 992px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+        }
+
+        .stats-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: var(--secondary);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-item .number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-item .label {
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        .calendar-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+        }
+
+        .week-navigation {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .current-week {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .calendar-view {
+            background: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .calendar-header {
+            display: grid;
+            grid-template-columns: 100px repeat(7, 1fr);
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+
+        .calendar-header > div {
+            padding: 15px;
+            text-align: center;
+        }
+
+        .time-column {
+            background: var(--secondary);
+        }
+
+        .calendar-body {
+            display: grid;
+            grid-template-columns: 100px repeat(7, 1fr);
+            grid-auto-rows: 80px;
+            height: 600px;
+            overflow-y: auto;
+        }
+
+        .time-slot {
+            padding: 10px;
+            border-right: 1px solid var(--light-gray);
+            border-bottom: 1px solid var(--light-gray);
+            font-size: 0.9rem;
+            color: var(--gray);
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+        }
+
+        .day-slot {
+            border-right: 1px solid var(--light-gray);
+            border-bottom: 1px solid var(--light-gray);
+            position: relative;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .day-slot:hover {
+            background: rgba(67, 97, 238, 0.05);
+        }
+
+        .calendar-body > div:last-child,
+        .calendar-body > div:nth-child(8n) {
+            border-right: none;
+        }
+
+        .calendar-body > div:nth-child(n+57) {
+            border-bottom: none;
+        }
+
+        .event {
+            background: var(--accent);
+            color: white;
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 0.85rem;
+            margin: 2px;
+            position: absolute;
+            left: 2px;
+            right: 2px;
+            z-index: 10;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .event.math {
+            background: linear-gradient(to right, #4361ee, #3a0ca3);
+        }
+
+        .event.science {
+            background: linear-gradient(to right, #4cc9f0, #4895ef);
+        }
+
+        .event.literature {
+            background: linear-gradient(to right, #f72585, #b5179e);
+        }
+
+        .event.history {
+            background: linear-gradient(to right, #ff9e00, #ff5400);
+        }
+
+        .event-title {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .event-time {
+            font-size: 0.75rem;
+            opacity: 0.9;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition);
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--border-radius);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: translateY(20px);
+            transition: var(--transition);
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .close-modal:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--light-gray);
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .subject-select {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .subject-option {
+            padding: 10px;
+            border: 2px solid var(--light-gray);
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .subject-option.selected {
+            border-color: var(--primary);
+            background: rgba(67, 97, 238, 0.1);
+        }
+
+        .modal-footer {
+            padding: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            border-top: 1px solid var(--light-gray);
+        }
+
+        .btn-danger {
+            background: var(--warning);
+        }
+
+        .btn-danger:hover {
+            background: #d31668;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 20px;
+            text-align: center;
+            color: var(--gray);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: var(--light-gray);
+        }
+
+        @media (max-width: 768px) {
+            .calendar-header {
+                grid-template-columns: 60px repeat(7, 1fr);
+            }
+            
+            .calendar-body {
+                grid-template-columns: 60px repeat(7, 1fr);
+            }
+            
+            .time-slot {
+                font-size: 0.7rem;
+                padding: 5px;
+            }
+            
+            .calendar-header > div {
+                padding: 10px 5px;
+                font-size: 0.8rem;
+            }
+            
+            .calendar-controls {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+            
+            header h1 {
+                font-size: 2.2rem;
+            }
+            
+            header p {
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .subject-select {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-calendar-alt"></i> Weekly Study Planner</h1>
+            <p>Organize your study schedule, track your progress, and achieve academic success with our intuitive weekly planner</p>
+        </header>
+        
+        <div class="dashboard">
+            <div class="sidebar">
+                <div class="stats-card">
+                    <h3><i class="fas fa-chart-line"></i> Weekly Stats</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="number" id="total-hours">18</div>
+                            <div class="label">Study Hours</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="number" id="completed">12</div>
+                            <div class="label">Sessions Completed</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="number" id="scheduled">20</div>
+                            <div class="label">Sessions Scheduled</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="number" id="productivity">85%</div>
+                            <div class="label">Productivity</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stats-card">
+                    <h3><i class="fas fa-tasks"></i> Quick Actions</h3>
+                    <div style="display: grid; gap: 10px;">
+                        <button class="btn" id="add-event-btn">
+                            <i class="fas fa-plus"></i> Add Study Session
+                        </button>
+                        <button class="btn btn-outline">
+                            <i class="fas fa-print"></i> Print Schedule
+                        </button>
+                        <button class="btn btn-outline">
+                            <i class="fas fa-sync"></i> Reset Week
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="main-content">
+                <div class="calendar-controls">
+                    <div class="week-navigation">
+                        <button class="btn" id="prev-week">
+                            <i class="fas fa-chevron-left"></i> Prev
+                        </button>
+                        <div class="current-week" id="current-week">June 10 - June 16, 2024</div>
+                        <button class="btn" id="next-week">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <button class="btn" id="today-btn">
+                        <i class="fas fa-calendar-day"></i> Today
+                    </button>
+                </div>
+                
+                <div class="calendar-view">
+                    <div class="calendar-header">
+                        <div class="time-column">Time</div>
+                        <div>Mon</div>
+                        <div>Tue</div>
+                        <div>Wed</div>
+                        <div>Thu</div>
+                        <div>Fri</div>
+                        <div>Sat</div>
+                        <div>Sun</div>
+                    </div>
+                    <div class="calendar-body" id="calendar-body">
+                        <!-- Time slots and day slots will be generated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Study Planner © 2024 | Designed for Students by Students</p>
+        </footer>
+    </div>
+    
+    <!-- Event Modal -->
+    <div class="modal" id="event-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Add Study Session</h2>
+                <button class="close-modal" id="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="event-title">Session Title</label>
+                    <input type="text" id="event-title" class="form-control" placeholder="What are you studying?">
+                </div>
+                
+                <div class="form-group">
+                    <label for="event-date">Date</label>
+                    <input type="date" id="event-date" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label>Time</label>
+                    <div style="display: flex; gap: 15px;">
+                        <input type="time" id="start-time" class="form-control" value="09:00">
+                        <span style="display: flex; align-items: center;">to</span>
+                        <input type="time" id="end-time" class="form-control" value="10:00">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Subject</label>
+                    <div class="subject-select">
+                        <div class="subject-option" data-subject="math">
+                            <i class="fas fa-calculator"></i>
+                            <div>Math</div>
+                        </div>
+                        <div class="subject-option" data-subject="science">
+                            <i class="fas fa-flask"></i>
+                            <div>Science</div>
+                        </div>
+                        <div class="subject-option" data-subject="literature">
+                            <i class="fas fa-book"></i>
+                            <div>Literature</div>
+                        </div>
+                        <div class="subject-option" data-subject="history">
+                            <i class="fas fa-landmark"></i>
+                            <div>History</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="event-notes">Notes (Optional)</label>
+                    <textarea id="event-notes" class="form-control" rows="3" placeholder="Any specific topics or resources..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="delete-event" style="display: none;">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+                <button class="btn" id="save-event">
+                    <i class="fas fa-save"></i> Save Session
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the calendar
+            initCalendar();
+            
+            // Event listeners for navigation
+            document.getElementById('prev-week').addEventListener('click', navigateWeek.bind(null, -1));
+            document.getElementById('next-week').addEventListener('click', navigateWeek.bind(null, 1));
+            document.getElementById('today-btn').addEventListener('click', goToToday);
+            document.getElementById('add-event-btn').addEventListener('click', openAddEventModal);
+            document.getElementById('close-modal').addEventListener('click', closeModal);
+            document.getElementById('save-event').addEventListener('click', saveEvent);
+            
+            // Subject selection
+            const subjectOptions = document.querySelectorAll('.subject-option');
+            subjectOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    subjectOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+            
+            // Sample events data
+            const events = [
+                {
+                    id: 1,
+                    title: 'Calculus Review',
+                    date: '2024-06-10',
+                    start: '09:00',
+                    end: '10:30',
+                    subject: 'math',
+                    notes: 'Chapter 5 - Derivatives'
+                },
+                {
+                    id: 2,
+                    title: 'Chemistry Lab Prep',
+                    date: '2024-06-11',
+                    start: '14:00',
+                    end: '15:30',
+                    subject: 'science',
+                    notes: 'Experiment #3 materials'
+                },
+                {
+                    id: 3,
+                    title: 'Modern Literature',
+                    date: '2024-06-12',
+                    start: '11:00',
+                    end: '12:30',
+                    subject: 'literature',
+                    notes: 'Hemingway analysis'
+                },
+                {
+                    id: 4,
+                    title: 'World War II Study',
+                    date: '2024-06-13',
+                    start: '16:00',
+                    end: '17:30',
+                    subject: 'history',
+                    notes: 'Causes and effects'
+                },
+                {
+                    id: 5,
+                    title: 'Linear Algebra',
+                    date: '2024-06-14',
+                    start: '10:00',
+                    end: '11:30',
+                    subject: 'math',
+                    notes: 'Matrix operations'
+                }
+            ];
+            
+            // Render events on calendar
+            renderEvents(events);
+        });
+        
+        // Initialize calendar with time slots
+        function initCalendar() {
+            const calendarBody = document.getElementById('calendar-body');
+            calendarBody.innerHTML = '';
+            
+            // Generate time slots (8:00 AM to 10:00 PM)
+            for (let hour = 8; hour <= 22; hour++) {
+                for (let minute = 0; minute < 60; minute += 30) {
+                    // Create time slot
+                    const timeSlot = document.createElement('div');
+                    timeSlot.className = 'time-slot';
+                    
+                    // Format time (12-hour format)
+                    let displayHour = hour;
+                    let ampm = 'AM';
+                    
+                    if (hour > 12) {
+                        displayHour = hour - 12;
+                        ampm = 'PM';
+                    } else if (hour === 12) {
+                        ampm = 'PM';
+                    }
+                    
+                    if (displayHour === 0) displayHour = 12;
+                    
+                    const timeString = `${displayHour}:${minute === 0 ? '00' : minute} ${ampm}`;
+                    timeSlot.textContent = timeString;
+                    
+                    calendarBody.appendChild(timeSlot);
+                    
+                    // Create day slots for each day
+                    for (let day = 0; day < 7; day++) {
+                        const daySlot = document.createElement('div');
+                        daySlot.className = 'day-slot';
+                        daySlot.dataset.day = day;
+                        daySlot.dataset.time = `${hour}:${minute}`;
+                        
+                        // Add click event to create new session
+                        daySlot.addEventListener('click', function() {
+                            openAddEventModal(this.dataset.day, this.dataset.time);
+                        });
+                        
+                        calendarBody.appendChild(daySlot);
+                    }
+                }
+            }
+            
+            // Set current week display
+            updateWeekDisplay();
+        }
+        
+        // Update current week display
+        function updateWeekDisplay() {
+            const today = new Date();
+            const startDate = new Date(today);
+            startDate.setDate(today.getDate() - today.getDay() + 1); // Start on Monday
+            
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+            
+            const options = { month: 'long', day: 'numeric' };
+            const startString = startDate.toLocaleDateString('en-US', options);
+            const endString = endDate.toLocaleDateString('en-US', options);
+            const year = startDate.getFullYear();
+            
+            document.getElementById('current-week').textContent = 
+                `${startString} - ${endString}, ${year}`;
+        }
+        
+        // Navigate to previous/next week
+        function navigateWeek(direction) {
+            // In a real app, this would change the displayed week
+            // For this demo, we'll just update the week display text
+            const weekDisplay = document.getElementById('current-week');
+            const currentText = weekDisplay.textContent;
+            
+            // Extract the year from the current text
+            const year = currentText.split(', ')[1];
+            
+            // Create a sample new week text
+            const weeks = [
+                'June 3 - June 9, 2024',
+                'June 10 - June 16, 2024',
+                'June 17 - June 23, 2024'
+            ];
+            
+            let currentIndex = weeks.indexOf(currentText);
+            if (currentIndex === -1) currentIndex = 1;
+            
+            let newIndex = currentIndex + direction;
+            if (newIndex < 0) newIndex = 0;
+            if (newIndex >= weeks.length) newIndex = weeks.length - 1;
+            
+            weekDisplay.textContent = weeks[newIndex];
+        }
+        
+        // Go to current week
+        function goToToday() {
+            updateWeekDisplay();
+        }
+        
+        // Open modal to add event
+        function openAddEventModal(day = null, time = null) {
+            const modal = document.getElementById('event-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const deleteBtn = document.getElementById('delete-event');
+            
+            // Reset form
+            document.getElementById('event-title').value = '';
+            document.getElementById('event-date').value = '';
+            document.getElementById('start-time').value = '09:00';
+            document.getElementById('end-time').value = '10:00';
+            document.getElementById('event-notes').value = '';
+            
+            // Reset subject selection
+            document.querySelectorAll('.subject-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Set modal title and hide delete button for new event
+            modalTitle.textContent = 'Add Study Session';
+            deleteBtn.style.display = 'none';
+            
+            // Set default date to today
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0];
+            document.getElementById('event-date').value = todayString;
+            
+            // If day and time were provided, set the time
+            if (time) {
+                const [hour, minute] = time.split(':');
+                let displayHour = parseInt(hour);
+                const displayMinute = minute;
+                let ampm = 'AM';
+                
+                if (displayHour > 12) {
+                    displayHour -= 12;
+                    ampm = 'PM';
+                } else if (displayHour === 12) {
+                    ampm = 'PM';
+                }
+                
+                // Set start time and end time 1 hour later
+                const startTime = `${displayHour}:${displayMinute} ${ampm}`;
+                let endHour = parseInt(hour) + 1;
+                if (endHour > 23) endHour = 23;
+                
+                let endDisplayHour = endHour;
+                let endAmpm = 'AM';
+                
+                if (endDisplayHour > 12) {
+                    endDisplayHour -= 12;
+                    endAmpm = 'PM';
+                } else if (endDisplayHour === 12) {
+                    endAmpm = 'PM';
+                }
+                
+                const endTime = `${endDisplayHour}:${displayMinute} ${endAmpm}`;
+                
+                // Set values in form (simplified for demo)
+                document.getElementById('start-time').value = `${hour}:${minute}`;
+                document.getElementById('end-time').value = `${endHour}:${minute}`;
+            }
+            
+            // Show modal
+            modal.classList.add('active');
+        }
+        
+        // Close modal
+        function closeModal() {
+            const modal = document.getElementById('event-modal');
+            modal.classList.remove('active');
+        }
+        
+        // Save event
+        function saveEvent() {
+            const title = document.getElementById('event-title').value.trim();
+            
+            if (!title) {
+                alert('Please enter a session title');
+                return;
+            }
+            
+            // Get form values
+            const date = document.getElementById('event-date').value;
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            const notes = document.getElementById('event-notes').value;
+            
+            // Get selected subject
+            const selectedSubject = document.querySelector('.subject-option.selected');
+            const subject = selectedSubject ? selectedSubject.dataset.subject : 'math';
+            
+            // In a real app, this would save to a database or local storage
+            // For this demo, we'll just show a success message
+            alert(`Study session "${title}" saved successfully!`);
+            
+            // Close modal
+            closeModal();
+        }
+        
+        // Render events on the calendar
+        function renderEvents(events) {
+            // Clear existing events
+            document.querySelectorAll('.event').forEach(event => event.remove());
+            
+            // For each event, create and position it on the calendar
+            events.forEach(event => {
+                const eventElement = document.createElement('div');
+                eventElement.className = `event ${event.subject}`;
+                eventElement.innerHTML = `
+                    <div class="event-title">${event.title}</div>
+                    <div class="event-time">${formatTime(event.start)} - ${formatTime(event.end)}</div>
+                `;
+                
+                // Add click event to edit
+                eventElement.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    openEditEventModal(event);
+                });
+                
+                // Find the correct slot to place the event
+                // In a real app, this would calculate the exact position based on date/time
+                const daySlots = document.querySelectorAll('.day-slot');
+                
+                // For this demo, we'll place events at random positions
+                const randomSlot = Math.floor(Math.random() * daySlots.length);
+                daySlots[randomSlot].appendChild(eventElement);
+            });
+        }
+        
+        // Open modal to edit event
+        function openEditEventModal(event) {
+            const modal = document.getElementById('event-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const deleteBtn = document.getElementById('delete-event');
+            
+            // Set modal title and show delete button
+            modalTitle.textContent = 'Edit Study Session';
+            deleteBtn.style.display = 'block';
+            
+            // Set form values
+            document.getElementById('event-title').value = event.title;
+            document.getElementById('event-date').value = event.date;
+            document.getElementById('start-time').value = event.start;
+            document.getElementById('end-time').value = event.end;
+            document.getElementById('event-notes').value = event.notes;
+            
+            // Set subject
+            document.querySelectorAll('.subject-option').forEach(opt => {
+                opt.classList.remove('selected');
+                if (opt.dataset.subject === event.subject) {
+                    opt.classList.add('selected');
+                }
+            });
+            
+            // Show modal
+            modal.classList.add('active');
+        }
+        
+        // Format time for display (HH:MM to 12-hour format)
+        function formatTime(timeString) {
+            const [hours, minutes] = timeString.split(':');
+            let hour = parseInt(hours);
+            const minute = minutes;
+            let ampm = 'AM';
+            
+            if (hour > 12) {
+                hour -= 12;
+                ampm = 'PM';
+            } else if (hour === 12) {
+                ampm = 'PM';
+            } else if (hour === 0) {
+                hour = 12;
+            }
+            
+            return `${hour}:${minute} ${ampm}`;
+        }
+    </script>
+</body>
+</html>
